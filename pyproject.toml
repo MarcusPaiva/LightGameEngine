@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "LightGameEngine"
+version = "0.0.1"
+description = "Light game engine package."
+authors = [
+    {name = "Marcus Paiva", email = "marcus.paiva.ti@gmail.com.br"},
+]
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.packages.find]
+include = ["light_game_engine*"]
+exclude = [""]
+namespaces = false  # true by default
+
+[project.urls]
+"Homepage" = "https://github.com/MarcusPaiva/LightGameEngine"

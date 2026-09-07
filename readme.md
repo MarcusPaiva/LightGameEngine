@@ -6,6 +6,14 @@ LightGameEngine is a light Python layer built on top of Pygame: it takes what Py
 
 The goal is not to compete with full game engines (Godot, Unity), and not to hide Pygame from you either. You keep writing plain Pygame code — this library just saves you from repeating the same boilerplate project after project.
 
+## 📦 Installation
+
+LightGameEngine is available on PyPI:
+
+```bash
+pip install LightGameEngine
+```
+
 ## 🎯 Philosophy
 
 LightGameEngine aims to be a **high-level** tool, built to make life easier for people writing games in Python — **not** to replace Pygame. You still have full access to Pygame whenever you need it; the library just stops you from rewriting, every single time, the things that should already be there: collision, input, basic UI, effects.

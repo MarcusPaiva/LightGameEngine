@@ -1,5 +1,5 @@
 """
-Text rendering wrapper around :mod:`pygame.font`.
+A simple wrapper around :mod:`pygame.font`, for drawing text.
 """
 from typing import List, Optional
 
@@ -8,17 +8,18 @@ import pygame
 
 class GameFont:
     """
-    A loaded font bound to one piece of text, with configurable color,
-    anti-aliasing and background, that can be re-rendered on demand.
+    A loaded font tied to one piece of text. You can set its color,
+    turn anti-aliasing on or off, and set a background color. Call
+    render() any time to draw the text with the current settings.
 
-    Uses pygame's built-in default font unless a custom font file is
-    loaded via :meth:`set_font`.
+    Uses pygame's built-in font by default. Call :meth:`set_font` to
+    use your own font file instead.
     """
 
     def __init__(self, size: int, text: str):
         """
         :param size: Font size, in points.
-        :param text: Initial text to render.
+        :param text: The text to show at first.
         """
         pygame.font.init()
         self.__text = text
@@ -30,11 +31,11 @@ class GameFont:
 
     def set_font(self, path: Optional[str]):
         """
-        Load a custom ``.ttf`` font file, replacing whichever font is
-        currently in use, at the current size.
+        Load your own ``.ttf`` font file, at the same size as before.
+        This replaces the font currently in use.
 
-        :param path: Path to a ``.ttf`` font file, or None to fall back
-            to pygame's built-in default font.
+        :param path: Path to a ``.ttf`` font file. Pass None to go back
+            to pygame's built-in font.
         :return: This instance, for chaining.
         :rtype: GameFont
         """
@@ -43,19 +44,19 @@ class GameFont:
 
     def get_text_size(self):
         """
-        Measure the current text as it would be rendered, without
-        actually rendering it.
+        Measure how big the text would look once drawn, without
+        actually drawing it.
 
-        :return: ``(width, height)`` of the rendered text, in pixels.
+        :return: ``(width, height)`` of the text, in pixels.
         :rtype: Tuple[int, int]
         """
         return self.__font.size(self.__text)
 
     def set_text(self, text: str):
         """
-        Change the text this font renders.
+        Change the text this font shows.
 
-        :param text: New text.
+        :param text: The new text.
         :return: This instance, for chaining.
         :rtype: GameFont
         """
@@ -64,7 +65,7 @@ class GameFont:
 
     def set_color(self, color: List[int]):
         """
-        Set the text color.
+        Set the color of the text.
 
         :param color: ``[r, g, b]`` (or ``[r, g, b, a]``) color.
         :return: This instance, for chaining.
@@ -75,9 +76,11 @@ class GameFont:
 
     def enable_anti_alias(self, value: bool):
         """
-        Toggle anti-aliasing for subsequent renders.
+        Turn anti-aliasing on or off for the next time you render.
+        Anti-aliasing makes text edges look smoother, but a bit softer.
 
-        :param value: Whether to anti-alias the rendered text.
+        :param value: True to smooth the text edges, False for sharp,
+            blocky edges.
         :return: This instance, for chaining.
         :rtype: GameFont
         """
@@ -86,10 +89,10 @@ class GameFont:
 
     def set_background_color(self, value: "None|List[int]"):
         """
-        Set (or clear) the background color drawn behind the text.
+        Set (or remove) the color drawn behind the text.
 
-        :param value: ``[r, g, b]`` background color, or None for a
-            transparent background.
+        :param value: ``[r, g, b]`` background color, or None for no
+            background (the text stays see-through behind).
         :return: This instance, for chaining.
         :rtype: GameFont
         """
@@ -98,8 +101,8 @@ class GameFont:
 
     def render(self):
         """
-        Render the current text with the current color, anti-alias and
-        background settings.
+        Draw the current text using the current color, anti-alias, and
+        background settings, and return the result as an image.
 
         :return: The rendered text.
         :rtype: pygame.Surface

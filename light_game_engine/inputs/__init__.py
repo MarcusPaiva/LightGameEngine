@@ -1,6 +1,6 @@
 """
-Input-handling subpackage of the game engine.
+The input-handling part of the game engine.
 
-Wraps pygame's keyboard and mouse polling behind
+Wraps pygame's keyboard, mouse and controller code inside
 :mod:`light_game_engine.inputs.game_input`.
 """

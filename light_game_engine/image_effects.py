@@ -1,5 +1,6 @@
 """
-Standalone image fade effect, driven by its own render loop.
+A standalone fade effect for images. Runs its own loop, so it takes
+over drawing until the effect finishes.
 """
 import sys
 
@@ -8,12 +9,12 @@ import pygame
 
 def fade_image(screen, image, image_rect, duration=2000):
     """
-    Fade effect to display images.
+    Show an image that fades in, then fades out.
 
-    :param screen: Screen to show image.
-    :param image: Image to display.
-    :param image_rect: Image bounds.
-    :param duration: Effect duration, in milliseconds.
+    :param screen: Screen to show the image on.
+    :param image: The image to show.
+    :param image_rect: Where to place the image (its box).
+    :param duration: How long the whole effect lasts, in milliseconds.
     :return: None
     """
     clock = pygame.time.Clock()

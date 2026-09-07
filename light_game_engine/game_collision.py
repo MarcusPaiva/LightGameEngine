@@ -1,5 +1,6 @@
 """
-Collision detection: circle-vs-circle, rect-vs-rect and circle-vs-rect.
+Checks for when two shapes touch or overlap: circle-vs-circle,
+rect-vs-rect, and circle-vs-rect.
 """
 import math
 
@@ -8,13 +9,13 @@ from light_game_engine.bounding_box import BoundingBox, RectBoundingBox
 
 def circle_collision_detections(position1: BoundingBox, radius1: int, position2: BoundingBox, radius2: int) -> bool:
     """
-    Euclidean circle-vs-circle collision detection.
+    Check if two circles touch or overlap.
 
-    :param position1: First object's bounding box position.
-    :param radius1: First object's radius distance.
-    :param position2: Second object's bounding box position.
-    :param radius2: Second object's radius distance.
-    :return: Whether the two circles overlap.
+    :param position1: First circle's position (its center is used).
+    :param radius1: First circle's radius.
+    :param position2: Second circle's position (its center is used).
+    :param radius2: Second circle's radius.
+    :return: True if the two circles touch or overlap.
     :rtype: bool
     """
     distance = math.sqrt(
@@ -26,11 +27,11 @@ def circle_collision_detections(position1: BoundingBox, radius1: int, position2:
 
 def rect_collision_detection(rect1: RectBoundingBox, rect2: RectBoundingBox) -> bool:
     """
-    Axis-aligned rectangle-vs-rectangle collision detection.
+    Check if two rectangles (not tilted) touch or overlap.
 
     :param rect1: First rectangle.
     :param rect2: Second rectangle.
-    :return: Whether the two rectangles overlap.
+    :return: True if the two rectangles touch or overlap.
     :rtype: bool
     """
     x0_1, y0_1, x1_1, y1_1 = rect1.bounds
@@ -40,15 +41,16 @@ def rect_collision_detection(rect1: RectBoundingBox, rect2: RectBoundingBox) -> 
 
 def circle_rect_collision_detection(circle_position: BoundingBox, radius: int, rect: RectBoundingBox) -> bool:
     """
-    Circle-vs-axis-aligned-rectangle collision detection.
+    Check if a circle touches or overlaps a rectangle (not tilted).
 
-    Finds the point on the rectangle closest to the circle's center and
-    checks whether that point is within the circle's radius.
+    Finds the point on the rectangle that is closest to the circle's
+    center, then checks if that point is close enough to be inside the
+    circle.
 
-    :param circle_position: Circle's bounding box position (its center is used).
-    :param radius: Circle's radius distance.
-    :param rect: Rectangle to test against.
-    :return: Whether the circle and the rectangle overlap.
+    :param circle_position: Circle's position (its center is used).
+    :param radius: Circle's radius.
+    :param rect: The rectangle to check against.
+    :return: True if the circle and the rectangle touch or overlap.
     :rtype: bool
     """
     x0, y0, x1, y1 = rect.bounds

@@ -1,6 +1,6 @@
 """
-Filled 2D shapes (rectangles and circles) that draw themselves onto a
-:class:`light_game_engine.screen.SurfaceScreen`.
+Simple filled shapes (rectangles and circles) that can draw themselves
+onto a :class:`light_game_engine.screen.SurfaceScreen`.
 """
 from typing import List
 
@@ -11,13 +11,13 @@ from light_game_engine.bounding_box import RectBoundingBox, CircleBoundingBox
 
 class Rect:
     """
-    A filled, axis-aligned rectangle.
+    A filled rectangle that is not tilted (its sides are flat).
     """
 
     def __init__(self, position_x: int, position_y: int, width: int, height: int):
         """
-        :param position_x: X of the top-left corner.
-        :param position_y: Y of the top-left corner.
+        :param position_x: X position of the top-left corner.
+        :param position_y: Y position of the top-left corner.
         :param width: Rectangle width.
         :param height: Rectangle height.
         """
@@ -26,7 +26,7 @@ class Rect:
 
     def set_fill_color(self, color: "str|List[int]"):
         """
-        Set the fill color.
+        Set the fill color of this rectangle.
 
         :param color: Color name/hex string, or ``[r, g, b]`` triplet.
         :return: This instance, for chaining.
@@ -39,8 +39,9 @@ class Rect:
         """
         Draw this rectangle onto a screen.
 
-        :param screen: Target :class:`light_game_engine.screen.SurfaceScreen`.
-        :return: A copy of this rectangle's bounding box.
+        :param screen: The :class:`light_game_engine.screen.SurfaceScreen`
+            to draw onto.
+        :return: A copy of this rectangle's box (its position and size).
         :rtype: RectBoundingBox
         """
         initial = self.__bounding_box.initial_position
@@ -56,8 +57,8 @@ class Circle:
 
     def __init__(self, position_x: int, position_y: int, radius):
         """
-        :param position_x: X coordinate of the circle's center.
-        :param position_y: Y coordinate of the circle's center.
+        :param position_x: X position of the circle's center.
+        :param position_y: Y position of the circle's center.
         :param radius: Circle radius.
         """
         self.__bounding_box = CircleBoundingBox(position_x, position_y, radius)
@@ -65,7 +66,7 @@ class Circle:
 
     def set_fill_color(self, color: "str|List[int]"):
         """
-        Set the fill color.
+        Set the fill color of this circle.
 
         :param color: Color name/hex string, or ``[r, g, b]`` triplet.
         :return: This instance, for chaining.
@@ -78,8 +79,9 @@ class Circle:
         """
         Draw this circle onto a screen.
 
-        :param screen: Target :class:`light_game_engine.screen.SurfaceScreen`.
-        :return: A copy of this circle's bounding box.
+        :param screen: The :class:`light_game_engine.screen.SurfaceScreen`
+            to draw onto.
+        :return: A copy of this circle's box (its center and radius).
         :rtype: CircleBoundingBox
         """
         pygame.draw.circle(screen.get_screen(), self.__fill_color, self.__bounding_box.center, self.__bounding_box.radius)

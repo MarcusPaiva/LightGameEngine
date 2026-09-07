@@ -1,3 +1,6 @@
+"""
+A clickable button UI element, built on top of pygame.
+"""
 from logging import disable
 from typing import Optional
 
@@ -10,16 +13,23 @@ from light_game_engine.screen import SurfaceScreen
 
 
 class Button:
+    """
+    A clickable text button. Reacts to a mouse click, and also to a
+    controller confirm-button press when the button is focused (see
+    :meth:`focus`).
+    """
 
     def __init__(self, screen:SurfaceScreen, start_x:int, start_y:int, text:str, margin:int=10, on_click = None, font_size:int = 40):
         """
-        Button initializer.
-        :param screen: Main screen instance.
-        :param start_x: Axis x start position.
-        :param start_y: Axis y end position.
-        :param text: Text display.
-        :param on_click: On click event.
-        :param font_size: Text font size.
+        :param screen: The screen this button will be drawn on.
+        :param start_x: X position of the button.
+        :param start_y: Y position of the button.
+        :param text: The text shown on the button.
+        :param margin: Space, in pixels, between the text and the
+            button's edge.
+        :param on_click: A function with no arguments, called when the
+            button is clicked (or confirmed with a controller).
+        :param font_size: Size of the text, in points.
         """
         self._screen = screen
         self._margin = margin
@@ -41,18 +51,31 @@ class Button:
         self._confirm_button = Buttons.a
 
     def disable(self, value:bool):
+        """
+        Turn this button on or off. A disabled button still draws, but
+        ignores clicks and controller confirm presses.
+
+        :param value: True to disable the button, False to enable it.
+        """
         self._disable = value
 
     @property
     def margin(self) -> int:
+        """
+        :return: Space, in pixels, between the text and the button's
+            edge.
+        :rtype: int
+        """
         return self._margin
 
     def focus(self, value: bool):
         """
-        Mark this button as focused (e.g. via controller navigation), so
-        it renders with its hover color and reacts to the controller's
-        confirm button even without the mouse over it.
-        :param value: Whether this button is focused.
+        Mark this button as focused (for example, chosen by controller
+        navigation). While focused, it is drawn with its hover color
+        and reacts to the controller's confirm button, even if the
+        mouse is not over it.
+
+        :param value: True to focus this button, False to unfocus it.
         :return: This instance, for chaining.
         """
         self._focused = value
@@ -60,12 +83,17 @@ class Button:
 
     @property
     def focused(self) -> bool:
+        """
+        :return: Whether this button is currently focused.
+        :rtype: bool
+        """
         return self._focused
 
     def set_confirm_button(self, button: Buttons):
         """
-        Change which controller button activates this button while it's
-        focused. Defaults to Buttons.a.
+        Change which controller button activates this button while it
+        is focused. The default is Buttons.a.
+
         :param button: The Buttons member that should trigger on_click.
         :return: This instance, for chaining.
         """
@@ -74,14 +102,19 @@ class Button:
 
     def set_font(self, value: str):
         """
-        Use a custom font file instead of the system default.
-        :param value: Path to a .ttf font file.
+        Use your own font file instead of the system's default font.
+
+        :param value: Path to a ``.ttf`` font file.
         :return: This instance, for chaining.
         """
         self._font_name = value
         return self
 
     def setup(self):
+        """
+        Load the font for this button's text. Call this once before
+        the first :meth:`update` call.
+        """
         font = GameFont(self._font_size, self._text)
         if self._font_name is not None:
             font.set_font(self._font_name)
@@ -89,24 +122,32 @@ class Button:
 
     def set_position(self, start_x: float, start_y: float):
         """
-        Reposition the button without changing its text/size.
-        :param start_x: Axis x start position.
-        :param start_y: Axis y start position.
+        Move this button to a new position, without changing its text
+        or size.
+
+        :param start_x: New x position.
+        :param start_y: New y position.
         """
         self._x = start_x
         self._y = start_y
 
     def content_size(self) -> RectBoundingBox:
         """
-        Measure the button's rendered size (text plus margin), independent
-        of its position. Requires setup() to have been called first.
-        :return: A zero-positioned RectBoundingBox whose width/height are the button's size.
+        Measure this button's size (text plus margin), no matter where
+        it is placed. You must call :meth:`setup` first.
+
+        :return: A box, placed at (0, 0), whose width and height match
+            this button's size.
+        :rtype: RectBoundingBox
         """
         text_width, text_height = self._main_font.get_text_size()
         return RectBoundingBox(0, 0, text_width + self._margin * 2, text_height + self._margin * 2)
 
     def _process_button_box(self):
-        """Process button box"""
+        """
+        Work out this button's box (position and size), using its
+        current position, text size, and margin.
+        """
         x, y = self._main_font.get_text_size()
         width, height = (self._x + x + self._margin,
                          self._y + y + self._margin)
@@ -119,25 +160,30 @@ class Button:
 
     def background_color(self, color:str):
         """
-        Set background color.
-        :param color: Color hex.
+        Set the color drawn when this button is not hovered or focused.
+
+        :param color: Color as a hex string (for example "#cccccc").
         """
         self._background_color = color
 
     def hover_color(self, color:str):
         """
-        Set hover background color.
-        :param color: Color hex.
+        Set the color drawn when this button is hovered by the mouse,
+        or focused (see :meth:`focus`).
+
+        :param color: Color as a hex string (for example "#000000").
         """
         self._hover_color = color
 
     def update(self, joystick: Optional[Joystick] = None):
         """
-        Advance this button's state by one frame: check for a mouse
-        click or, if this button is focused, a controller confirm-button
-        press; re-render its text.
-        :param joystick: Joystick to read a confirm-button press from,
-            if this button may be focused via controller navigation.
+        Move this button forward by one frame: check for a mouse click,
+        or (if this button is focused) a controller confirm-button
+        press, and re-draw its text.
+
+        :param joystick: Joystick to read a confirm-button press from.
+            Only needed if this button can be focused by controller
+            navigation.
         :return: None
         """
         self._process_button_box()
@@ -156,8 +202,8 @@ class Button:
 
     def __process_button_text(self):
         """
-        Process button text.
-        :return:
+        Draw the button's text and work out where to place it, centered
+        inside the button's box.
         """
         self._button_text = self._main_font.render()
         button_text_size = self._button_text.get_size()
@@ -168,34 +214,45 @@ class Button:
 
     def __mouse_hove_detection(self) -> bool:
         """
-        Mouse move inside box detection event.
-        :return: Mouse inside box status.
+        Check if the mouse is currently over this button.
+
+        :return: True if the mouse is inside this button's box.
+        :rtype: bool
         """
         position_x, position_y = mouse_position()
         return self.__point_inside_button_detection(position_x, position_y)
 
     def __click_inside_button_detection(self, position_x:int, position_y:int) -> bool:
         """
-        Click inside box event.
-        :param position_x: Axis x position event.
-        :param position_y: Axis y position event.
-        :return: Mouse click inside box status.
+        Check if a click position is inside this button.
+
+        :param position_x: X position of the click.
+        :param position_y: Y position of the click.
+        :return: True if the click is inside this button's box.
+        :rtype: bool
         """
         return self.__point_inside_button_detection(position_x, position_y)
 
     def __point_inside_button_detection(self, position_x: float, position_y: float) -> bool:
         """
-        Point-vs-button-box collision. Delegates to the shared
-        circle_rect_collision_detection helper (as a zero-radius circle)
-        instead of comparing bounds by hand.
-        :param position_x: Axis x position to test.
-        :param position_y: Axis y position to test.
-        :return: Whether the point falls inside the button's box.
+        Check if a point is inside this button's box. Uses the shared
+        circle_rect_collision_detection helper (treating the point as a
+        circle with radius 0) instead of comparing edges by hand.
+
+        :param position_x: X position to check.
+        :param position_y: Y position to check.
+        :return: True if the point is inside this button's box.
+        :rtype: bool
         """
         point = CircleBoundingBox(position_x, position_y, 0)
         return circle_rect_collision_detection(point, 0, self._main_bounding_box)
 
     def draw(self) -> None:
+        """
+        Draw this button and its text onto its screen.
+
+        :return: None
+        """
         color = self._background_color
         if self._hover:
             color = self._hover_color

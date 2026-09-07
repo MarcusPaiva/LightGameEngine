@@ -74,7 +74,7 @@ class TestKeyboard:
     def test_no_keys_pressed_initially(self):
         keyboard = Keyboard()
         assert keyboard.user_is_pressing is False
-        assert keyboard.current_keys_pressing == []
+        assert keyboard.get_user_interaction == []
 
     def _fake_pressed_array(self, *pressed_keys: Keys):
         # pygame's real key constants span a huge range (extended keys use
@@ -94,7 +94,7 @@ class TestKeyboard:
         keyboard = Keyboard()
         keyboard.detect_buttons()
         assert keyboard.user_is_pressing is False
-        assert keyboard.current_keys_pressing == []
+        assert keyboard.get_user_interaction == []
 
     def test_detect_buttons_with_one_key_pressed(self, mocker):
         mocker.patch(
@@ -104,7 +104,7 @@ class TestKeyboard:
         keyboard = Keyboard()
         keyboard.detect_buttons()
         assert keyboard.user_is_pressing is True
-        assert keyboard.current_keys_pressing == [Keys.a]
+        assert keyboard.get_user_interaction == [Keys.a]
 
     def test_detect_buttons_with_multiple_keys_pressed(self, mocker):
         mocker.patch(
@@ -114,7 +114,7 @@ class TestKeyboard:
         keyboard = Keyboard()
         keyboard.detect_buttons()
         assert keyboard.user_is_pressing is True
-        assert set(keyboard.current_keys_pressing) == {Keys.a, Keys.up}
+        assert set(keyboard.get_user_interaction) == {Keys.a, Keys.up}
 
     def test_detect_buttons_refreshes_state_each_call(self, mocker):
         get_pressed = mocker.patch("light_game_engine.inputs.game_input.pygame.key.get_pressed")
@@ -122,11 +122,11 @@ class TestKeyboard:
 
         get_pressed.return_value = self._fake_pressed_array(Keys.a)
         keyboard.detect_buttons()
-        assert keyboard.current_keys_pressing == [Keys.a]
+        assert keyboard.get_user_interaction == [Keys.a]
 
         get_pressed.return_value = self._fake_pressed_array()
         keyboard.detect_buttons()
-        assert keyboard.current_keys_pressing == []
+        assert keyboard.get_user_interaction == []
         assert keyboard.user_is_pressing is False
 
 
@@ -302,19 +302,19 @@ class TestJoystickDetectButtons:
 
         joystick.detect_buttons()
 
-        assert joystick.current_buttons_pressing == []
+        assert joystick.get_user_interaction == []
         assert joystick.user_is_pressing is False
 
     def test_no_buttons_pressed(self, mocker):
         joystick = self._joystick_with(mocker, buttons={})
         joystick.detect_buttons()
-        assert joystick.current_buttons_pressing == []
+        assert joystick.get_user_interaction == []
         assert joystick.user_is_pressing is False
 
     def test_one_button_pressed(self, mocker):
         joystick = self._joystick_with(mocker, buttons={Buttons.a.value: True})
         joystick.detect_buttons()
-        assert joystick.current_buttons_pressing == [Buttons.a]
+        assert joystick.get_user_interaction == [Buttons.a]
         assert joystick.user_is_pressing is True
 
     def test_multiple_buttons_pressed(self, mocker):
@@ -322,16 +322,16 @@ class TestJoystickDetectButtons:
             mocker, buttons={Buttons.a.value: True, Buttons.dpad_up.value: True}
         )
         joystick.detect_buttons()
-        assert set(joystick.current_buttons_pressing) == {Buttons.a, Buttons.dpad_up}
+        assert set(joystick.get_user_interaction) == {Buttons.a, Buttons.dpad_up}
 
     def test_detect_buttons_refreshes_state_each_call(self, mocker):
         joystick = self._joystick_with(mocker, buttons={Buttons.a.value: True})
         joystick.detect_buttons()
-        assert joystick.current_buttons_pressing == [Buttons.a]
+        assert joystick.get_user_interaction == [Buttons.a]
 
         joystick._controller._buttons = {}
         joystick.detect_buttons()
-        assert joystick.current_buttons_pressing == []
+        assert joystick.get_user_interaction == []
         assert joystick.user_is_pressing is False
 
 

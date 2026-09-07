@@ -1,3 +1,7 @@
+"""
+A modal box (popup) with a message and, optionally, a row of buttons
+to choose from - built on top of pygame.
+"""
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
@@ -11,6 +15,9 @@ from light_game_engine.screen import SurfaceScreen
 
 @dataclass
 class Options:
+    """
+    One choice shown as a button inside a :class:`Modal`.
+    """
     text: str
     on_click: Callable[[], None]
     background_color: str = field(default="#cccccc")
@@ -18,15 +25,23 @@ class Options:
 
 
 class Modal:
+    """
+    A box shown in the middle of the screen, with a message and an
+    optional row of option buttons (see :meth:`add_options`).
+    """
+
     def __init__(self, screen: SurfaceScreen, text: str, width_ratio: float = 0.6,
                  height_ratio: float = 0.55, margin: int = 10, font_size: int = 40, show=True):
         """
-        Modal initializer.
-        :param screen: Main screen instance.
-        :param text: Text message inside modal to display.
-        :param width_ratio: Modal width as a fraction of the screen's current width.
-        :param height_ratio: Modal height as a fraction of the screen's current height.
-        :param font_size: Text font size.
+        :param screen: The screen this modal will be drawn on.
+        :param text: The message shown inside the modal.
+        :param width_ratio: How wide the modal is, as a share of the
+            screen's width (0.6 means 60% of the screen's width).
+        :param height_ratio: How tall the modal is, as a share of the
+            screen's height.
+        :param margin: Space, in pixels, used around the option buttons.
+        :param font_size: Size of the text, in points.
+        :param show: Whether the modal starts visible.
         """
         self._screen = screen
         self._margin = margin
@@ -46,8 +61,9 @@ class Modal:
 
     def set_font(self, value: str):
         """
-        Use a custom font file instead of the system default.
-        :param value: Path to a .ttf font file.
+        Use your own font file instead of the system's default font.
+
+        :param value: Path to a ``.ttf`` font file.
         :return: This instance, for chaining.
         """
         self._font_name = value
@@ -55,9 +71,11 @@ class Modal:
 
     def __compute_bounding_box(self) -> RectBoundingBox:
         """
-        Compute a bounding box centered on the screen, sized proportionally
-        to the screen's current dimensions.
-        :return: Centered RectBoundingBox.
+        Work out a box centered on the screen, sized as a share of the
+        screen's current width and height.
+
+        :return: The centered box.
+        :rtype: RectBoundingBox
         """
         screen_width = self._screen.width()
         screen_height = self._screen.height()
@@ -69,16 +87,20 @@ class Modal:
 
     def show(self, value:bool):
         """
-        Display modal.
-        :param value: Visibility status.
-        :return:
+        Show or hide this modal.
+
+        :param value: True to show it, False to hide it.
+        :return: This instance, for chaining.
         """
         self._show = value
         return self
 
     def setup(self):
         """
-        Setup event.
+        Load the font for this modal's text. Call this once before the
+        first :meth:`update` call.
+
+        :return: This instance, for chaining.
         """
         font = GameFont(self._font_size, self._text)
         if self._font_name is not None:
@@ -88,20 +110,24 @@ class Modal:
 
     def add_options(self, options: List[Options]):
         """
-        Add options to modal.
-        :param options: List of options to add in modal.
-        :return:
+        Add one or more option buttons to this modal.
+
+        :param options: The options to add.
+        :return: This instance, for chaining.
         """
         self._options += options
         return self
 
     def update(self, joystick: Optional[Joystick] = None):
         """
-        Update event.
-        :param joystick: Joystick to navigate/confirm options with. When
-            given, D-pad left/right move focus between options and the
-            focused option's confirm button activates it - the same as
-            clicking it with the mouse.
+        Move this modal forward by one frame: re-draw its text and its
+        option buttons.
+
+        :param joystick: Joystick used to move between and confirm
+            options. When given, D-pad left/right move the focus
+            between options, and the focused option's confirm button
+            activates it - the same as clicking it with the mouse.
+        :return: This instance, for chaining.
         """
         self._main_bounding_box = self.__compute_bounding_box()
         self.__process_button_text()
@@ -111,8 +137,9 @@ class Modal:
 
     def __navigate_options(self, joystick: Optional[Joystick]):
         """
-        Move the focused option left/right on a D-pad press, and keep
-        the focused index valid as options are added/removed.
+        Move the focused option left or right on a D-pad press, and
+        keep the focused option valid as options are added or removed.
+
         :param joystick: Joystick to read D-pad presses from, if any.
         :return: None
         """
@@ -129,12 +156,13 @@ class Modal:
 
     def __process_options(self, joystick: Optional[Joystick] = None):
         """
-        Process options buttons in modal, laid out left-to-right with equal
-        gaps between them and equal outer margins to the box's edges,
-        regardless of how wide each button's text makes it.
-        :param joystick: Joystick passed down to each option's update(),
+        Build and place the option buttons, side by side, with equal
+        gaps between them and equal space on each side of the row - no
+        matter how wide each button's text makes it.
+
+        :param joystick: Joystick passed on to each option's update(),
             so the focused option can react to its confirm button.
-        :return:
+        :return: None
         """
         self._options_buttons = []
         if not self._options:
@@ -169,8 +197,8 @@ class Modal:
 
     def __process_button_text(self):
         """
-        Process button text.
-        :return:
+        Draw the modal's message and work out where to place it inside
+        the modal's box.
         """
         self._button_text = self._main_font.render()
         button_text_size = self._button_text.get_size()
@@ -181,7 +209,10 @@ class Modal:
 
     def draw(self):
         """
-        Draw event.
+        Draw this modal, its message, and its option buttons onto its
+        screen. Draws nothing if the modal is hidden.
+
+        :return: This instance, for chaining.
         """
         if self._show:
             box = self._main_bounding_box

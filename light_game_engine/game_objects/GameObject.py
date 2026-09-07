@@ -1,5 +1,5 @@
 """
-Abstract base class every drawable, movable game entity implements.
+The base rule every drawable, movable game thing must follow.
 """
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -9,15 +9,16 @@ from light_game_engine.bounding_box import BoundingBox
 
 class GameObject(ABC):
     """
-    Contract for a game entity that has a position, can be updated once
-    per frame, drawn to the screen, and optionally exposes the bounding
-    box of what it last drew (its "sprite").
+    Any game object that follows this rule must have a position, must
+    be able to update itself once per frame, must be able to draw
+    itself, and may show the box of what it last drew (its "sprite").
     """
 
     @abstractmethod
     def update(self):
         """
-        Advance this object's state by one frame (movement, animation, etc).
+        Move this object forward by one frame (for example: movement,
+        animation).
 
         :return: None
         """
@@ -29,7 +30,7 @@ class GameObject(ABC):
         """
         This object's current position.
 
-        :return: The object's bounding box.
+        :return: The object's box.
         :rtype: BoundingBox
         """
         pass
@@ -47,10 +48,10 @@ class GameObject(ABC):
     @abstractmethod
     def sprite(self) -> Optional[BoundingBox]:
         """
-        The bounding box of the shape last drawn for this object, if any.
+        The box of the shape this object last drew, if any.
 
-        :return: The last-drawn bounding box, or None if nothing has been
-            drawn yet.
+        :return: The last-drawn box, or None if nothing has been drawn
+            yet.
         :rtype: Optional[BoundingBox]
         """
         pass

@@ -1,6 +1,6 @@
 """
-The application's window, wrapping pygame's display module and owning
-pygame's init/quit lifecycle.
+The game's window. Wraps pygame's display module, and owns starting
+and stopping pygame itself.
 """
 from typing import List
 
@@ -9,14 +9,14 @@ import pygame
 
 class SurfaceScreen:
     """
-    The game's window: opens the display surface and exposes only the
-    small set of drawing and timing operations the game needs, so
-    callers never have to touch pygame's display/time APIs directly.
+    The game's window: opens it, and offers only the small set of
+    drawing and timing actions a game needs. Callers never have to
+    touch pygame's display/time code directly.
     """
 
     def __init__(self, width: int, height: int, title: str):
         """
-        Initialize pygame and open the application window.
+        Start pygame and open the game's window.
 
         :param width: Window width, in pixels.
         :param height: Window height, in pixels.
@@ -29,9 +29,9 @@ class SurfaceScreen:
 
     def draw(self, artfact, position: List[int]):
         """
-        Blit a surface onto the screen.
+        Draw an image onto the screen.
 
-        :param artfact: Surface to draw.
+        :param artfact: The image to draw.
         :param position: ``[x, y]`` position to draw it at.
         :return: This instance, for chaining.
         :rtype: SurfaceScreen
@@ -41,7 +41,7 @@ class SurfaceScreen:
 
     def fill(self, color: "str|List[int]"):
         """
-        Fill the entire screen with a color.
+        Fill the whole screen with one color.
 
         :param color: Color name/hex string, or ``[r, g, b]`` triplet.
         :return: This instance, for chaining.
@@ -66,7 +66,7 @@ class SurfaceScreen:
 
     def flip(self):
         """
-        Present the current frame to the display.
+        Show everything drawn so far on screen.
 
         :return: This instance, for chaining.
         :rtype: SurfaceScreen
@@ -76,7 +76,7 @@ class SurfaceScreen:
 
     def set_clock(self, value: int):
         """
-        Cap the frame rate, sleeping as needed.
+        Limit how many frames run per second, pausing as needed.
 
         :param value: Target frames per second.
         :return: This instance, for chaining.
@@ -87,14 +87,15 @@ class SurfaceScreen:
 
     def get_screen(self):
         """
-        :return: The underlying pygame display surface.
+        :return: The pygame surface behind this screen, for code that
+            needs direct pygame access.
         :rtype: pygame.Surface
         """
         return self.__screen
 
     def quit(self):
         """
-        Shut pygame down.
+        Stop pygame.
 
         :return: This instance, for chaining.
         :rtype: SurfaceScreen

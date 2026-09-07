@@ -1,9 +1,9 @@
 """
-Pure geometry: 2D bounding boxes with no pygame dependency.
+Simple 2D shapes: boxes and circles, with no pygame code inside.
 
-Every position/size accessor returns plain numbers or ``[x, y]``
-pairs - never a ``pygame.Vector2`` - so game code built on top of
-this module never needs to import pygame itself.
+Every method here returns plain numbers or ``[x, y]`` pairs, never a
+``pygame.Vector2``. This means game code that uses this module does
+not need to import pygame at all.
 """
 from abc import ABC, abstractmethod
 from typing import List, Tuple
@@ -11,15 +11,15 @@ from typing import List, Tuple
 
 class BoundingBox(ABC):
     """
-    Abstract 2D bounding box: something with a position and a size,
-    describable by its corners, center and dimensions.
+    A shape with a position and a size. You can ask it for its
+    corners, its center, and its width and height.
     """
 
     @property
     @abstractmethod
     def center(self) -> List[float]:
         """
-        This box's center position.
+        The center point of this box.
 
         :return: ``[x, y]`` pair.
         :rtype: List[float]
@@ -30,8 +30,8 @@ class BoundingBox(ABC):
     @abstractmethod
     def initial_position(self) -> List[float]:
         """
-        This box's top-left corner (or, for a circle, the top-left
-        corner of its bounding square).
+        The top-left corner of this box. For a circle, this is the
+        top-left corner of the square drawn around it.
 
         :return: ``[x0, y0]`` pair.
         :rtype: List[float]
@@ -42,8 +42,8 @@ class BoundingBox(ABC):
     @abstractmethod
     def final_position(self) -> List[float]:
         """
-        This box's bottom-right corner (or, for a circle, the
-        bottom-right corner of its bounding square).
+        The bottom-right corner of this box. For a circle, this is the
+        bottom-right corner of the square drawn around it.
 
         :return: ``[x1, y1]`` pair.
         :rtype: List[float]
@@ -54,7 +54,7 @@ class BoundingBox(ABC):
     @abstractmethod
     def bounds(self) -> Tuple[int, int, int, int]:
         """
-        This box's corners as a flat tuple.
+        All four corners of this box, in one tuple.
 
         :return: ``(x0, y0, x1, y1)`` tuple.
         :rtype: Tuple[int, int, int, int]
@@ -65,7 +65,7 @@ class BoundingBox(ABC):
     @abstractmethod
     def size(self) -> List[float]:
         """
-        This box's dimensions.
+        The width and height of this box.
 
         :return: ``[width, height]`` pair.
         :rtype: List[float]
@@ -76,7 +76,8 @@ class BoundingBox(ABC):
     @abstractmethod
     def x0(self) -> float:
         """
-        Left edge (or bounding-square left, for a circle).
+        The left edge of this box. For a circle, this is the left edge
+        of the square drawn around it.
 
         :return: X coordinate of the left edge.
         :rtype: float
@@ -87,7 +88,8 @@ class BoundingBox(ABC):
     @abstractmethod
     def y0(self) -> float:
         """
-        Top edge (or bounding-square top, for a circle).
+        The top edge of this box. For a circle, this is the top edge
+        of the square drawn around it.
 
         :return: Y coordinate of the top edge.
         :rtype: float
@@ -98,7 +100,8 @@ class BoundingBox(ABC):
     @abstractmethod
     def x1(self) -> float:
         """
-        Right edge (or bounding-square right, for a circle).
+        The right edge of this box. For a circle, this is the right
+        edge of the square drawn around it.
 
         :return: X coordinate of the right edge.
         :rtype: float
@@ -109,7 +112,8 @@ class BoundingBox(ABC):
     @abstractmethod
     def y1(self) -> float:
         """
-        Bottom edge (or bounding-square bottom, for a circle).
+        The bottom edge of this box. For a circle, this is the bottom
+        edge of the square drawn around it.
 
         :return: Y coordinate of the bottom edge.
         :rtype: float
@@ -120,7 +124,7 @@ class BoundingBox(ABC):
     @abstractmethod
     def center_x(self) -> float:
         """
-        Center x coordinate.
+        The x position of the center.
 
         :return: X coordinate of the center.
         :rtype: float
@@ -131,7 +135,7 @@ class BoundingBox(ABC):
     @abstractmethod
     def center_y(self) -> float:
         """
-        Center y coordinate.
+        The y position of the center.
 
         :return: Y coordinate of the center.
         :rtype: float
@@ -142,7 +146,7 @@ class BoundingBox(ABC):
     @abstractmethod
     def width(self) -> float:
         """
-        This box's width.
+        The width of this box.
 
         :return: Width.
         :rtype: float
@@ -153,7 +157,7 @@ class BoundingBox(ABC):
     @abstractmethod
     def height(self) -> float:
         """
-        This box's height.
+        The height of this box.
 
         :return: Height.
         :rtype: float
@@ -163,9 +167,10 @@ class BoundingBox(ABC):
     @abstractmethod
     def copy(self) -> "BoundingBox":
         """
-        Build an independent copy of this bounding box.
+        Make a new copy of this box. Changing the copy will not change
+        the original.
 
-        :return: A new bounding box with the same geometry.
+        :return: A new bounding box with the same shape and position.
         :rtype: BoundingBox
         """
         pass
@@ -173,15 +178,16 @@ class BoundingBox(ABC):
 
 class RectBoundingBox(BoundingBox):
     """
-    Axis-aligned rectangular bounding box, defined by its two corners.
+    A rectangle that is not tilted (its sides are flat: up-down and
+    left-right). It is defined by its two corners.
     """
 
     def __init__(self, x0, y0, x, y):
         """
-        :param x0: X of the initial (top-left) corner.
-        :param y0: Y of the initial (top-left) corner.
-        :param x: X of the final (bottom-right) corner.
-        :param y: Y of the final (bottom-right) corner.
+        :param x0: X position of the top-left corner.
+        :param y0: Y position of the top-left corner.
+        :param x: X position of the bottom-right corner.
+        :param y: Y position of the bottom-right corner.
         """
         self._x0 = x0
         self._y0 = y0
@@ -191,7 +197,7 @@ class RectBoundingBox(BoundingBox):
     @property
     def center(self) -> List[float]:
         """
-        :return: ``[x, y]`` pair for this rectangle's center.
+        :return: ``[x, y]`` position of the center of this rectangle.
         :rtype: List[float]
         """
         x_center = (self._x - self._x0) / 2
@@ -201,7 +207,7 @@ class RectBoundingBox(BoundingBox):
     @property
     def initial_position(self) -> List[float]:
         """
-        :return: ``[x0, y0]`` pair for the top-left corner.
+        :return: ``[x0, y0]`` position of the top-left corner.
         :rtype: List[float]
         """
         return [self._x0, self._y0]
@@ -209,7 +215,7 @@ class RectBoundingBox(BoundingBox):
     @property
     def final_position(self) -> List[float]:
         """
-        :return: ``[x1, y1]`` pair for the bottom-right corner.
+        :return: ``[x1, y1]`` position of the bottom-right corner.
         :rtype: List[float]
         """
         return [self._x, self._y]
@@ -304,14 +310,15 @@ class RectBoundingBox(BoundingBox):
 
 class CircleBoundingBox(BoundingBox):
     """
-    Circular bounding box, defined by its center and radius. Corner-
-    based properties describe the square that bounds the circle.
+    A circle, defined by its center point and its radius. The
+    corner-style properties (like x0 and x1) describe the square drawn
+    around this circle.
     """
 
     def __init__(self, x_center: int, y_center: int, radius: int):
         """
-        :param x_center: X coordinate of the circle's center.
-        :param y_center: Y coordinate of the circle's center.
+        :param x_center: X position of the circle's center.
+        :param y_center: Y position of the circle's center.
         :param radius: Circle radius.
         """
         self.__x = x_center
@@ -321,7 +328,7 @@ class CircleBoundingBox(BoundingBox):
     @property
     def center(self) -> List[float]:
         """
-        :return: ``[x, y]`` pair for the circle's center.
+        :return: ``[x, y]`` position of the circle's center.
         :rtype: List[float]
         """
         return [self.__x, self.__y]
@@ -329,7 +336,8 @@ class CircleBoundingBox(BoundingBox):
     @property
     def initial_position(self) -> List[float]:
         """
-        :return: ``[x0, y0]`` pair for the bounding square's top-left corner.
+        :return: ``[x0, y0]`` position of the top-left corner of the
+            square drawn around this circle.
         :rtype: List[float]
         """
         return [self.__x - self.__radius, self.__y - self.__radius]
@@ -337,7 +345,8 @@ class CircleBoundingBox(BoundingBox):
     @property
     def final_position(self) -> List[float]:
         """
-        :return: ``[x1, y1]`` pair for the bounding square's bottom-right corner.
+        :return: ``[x1, y1]`` position of the bottom-right corner of
+            the square drawn around this circle.
         :rtype: List[float]
         """
         return [self.__x + self.__radius, self.__y + self.__radius]
@@ -345,7 +354,8 @@ class CircleBoundingBox(BoundingBox):
     @property
     def bounds(self) -> Tuple[int, int, int, int]:
         """
-        :return: ``(x0, y0, x1, y1)`` tuple for the bounding square.
+        :return: ``(x0, y0, x1, y1)`` tuple for the square drawn around
+            this circle.
         :rtype: Tuple[int, int, int, int]
         """
         return self.__x - self.__radius, self.__y - self.__radius, self.__x + self.__radius, self.__y + self.__radius
@@ -369,7 +379,8 @@ class CircleBoundingBox(BoundingBox):
     @property
     def x0(self) -> float:
         """
-        :return: X coordinate of the bounding square's left edge.
+        :return: X coordinate of the left edge of the square drawn
+            around this circle.
         :rtype: float
         """
         return self.__x - self.__radius
@@ -377,7 +388,8 @@ class CircleBoundingBox(BoundingBox):
     @property
     def y0(self) -> float:
         """
-        :return: Y coordinate of the bounding square's top edge.
+        :return: Y coordinate of the top edge of the square drawn
+            around this circle.
         :rtype: float
         """
         return self.__y - self.__radius
@@ -385,7 +397,8 @@ class CircleBoundingBox(BoundingBox):
     @property
     def x1(self) -> float:
         """
-        :return: X coordinate of the bounding square's right edge.
+        :return: X coordinate of the right edge of the square drawn
+            around this circle.
         :rtype: float
         """
         return self.__x + self.__radius
@@ -393,7 +406,8 @@ class CircleBoundingBox(BoundingBox):
     @property
     def y1(self) -> float:
         """
-        :return: Y coordinate of the bounding square's bottom edge.
+        :return: Y coordinate of the bottom edge of the square drawn
+            around this circle.
         :rtype: float
         """
         return self.__y + self.__radius
@@ -417,7 +431,8 @@ class CircleBoundingBox(BoundingBox):
     @property
     def width(self) -> float:
         """
-        :return: Diameter (used as the bounding square's width).
+        :return: Diameter (used as the width of the square drawn around
+            this circle).
         :rtype: float
         """
         return self.__radius * 2
@@ -425,21 +440,24 @@ class CircleBoundingBox(BoundingBox):
     @property
     def height(self) -> float:
         """
-        :return: Diameter (used as the bounding square's height).
+        :return: Diameter (used as the height of the square drawn
+            around this circle).
         :rtype: float
         """
         return self.__radius * 2
 
     def copy(self) -> "CircleBoundingBox":
         """
-        :return: A new :class:`CircleBoundingBox` with the same center and radius.
+        :return: A new :class:`CircleBoundingBox` with the same center
+            and radius.
         :rtype: CircleBoundingBox
         """
         return CircleBoundingBox(self.__x, self.__y, self.__radius)
 
     def set_position(self, x: float, y: float) -> "CircleBoundingBox":
         """
-        Move this circle's center to an absolute position.
+        Move this circle to a new position. You give the exact x and y
+        position (not an offset).
 
         :param x: New center x.
         :param y: New center y.
@@ -452,7 +470,7 @@ class CircleBoundingBox(BoundingBox):
 
     def move_by(self, dx: float, dy: float) -> "CircleBoundingBox":
         """
-        Move this circle's center by a relative offset.
+        Move this circle by an amount, added to its current position.
 
         :param dx: X offset.
         :param dy: Y offset.
@@ -465,10 +483,12 @@ class CircleBoundingBox(BoundingBox):
 
     def __eq__(self, other) -> bool:
         """
-        Two circles are equal when their center and radius match.
+        Two circles are equal when they have the same center and the
+        same radius.
 
-        :param other: Object to compare against.
-        :return: Whether ``other`` is an equal :class:`CircleBoundingBox`.
+        :param other: The other object to compare with.
+        :return: True if ``other`` is a :class:`CircleBoundingBox` with
+            the same center and radius.
         :rtype: bool
         """
         if not isinstance(other, CircleBoundingBox):
@@ -477,7 +497,8 @@ class CircleBoundingBox(BoundingBox):
 
     def __hash__(self):
         """
-        :return: Hash consistent with :meth:`__eq__`.
+        :return: A hash value that matches :meth:`__eq__`, so equal
+            circles always give the same hash.
         :rtype: int
         """
         return hash((self.__x, self.__y, self.__radius))

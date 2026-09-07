@@ -1,12 +1,12 @@
 """
-Audio playback: short sound effects and looping background music.
+Playing sound: short sound effects, and looping background music.
 """
 import pygame
 
 
 class SoundEffect:
     """
-    A short, one-shot sound effect.
+    A short sound that plays once, like a jump or a hit sound.
     """
 
     def __init__(self, file: str):
@@ -17,9 +17,9 @@ class SoundEffect:
 
     def set_volume(self, value: float):
         """
-        Set this effect's playback volume.
+        Set how loud this sound effect plays.
 
-        :param value: Volume, from 0.0 (silent) to 1.0 (full).
+        :param value: Volume, from 0.0 (silent) to 1.0 (full volume).
         :return: This instance, for chaining.
         :rtype: SoundEffect
         """
@@ -28,7 +28,7 @@ class SoundEffect:
 
     def play(self):
         """
-        Play this effect once.
+        Play this sound effect once.
 
         :return: This instance, for chaining.
         :rtype: SoundEffect
@@ -39,12 +39,12 @@ class SoundEffect:
 
 class Music:
     """
-    The single, shared background-music channel.
+    The one shared background-music channel for the whole game.
     """
 
     def __init__(self, file: str):
         """
-        Load a music track without starting playback.
+        Load a music track, but do not start playing it yet.
 
         :param file: Path to the music file to load.
         """
@@ -53,9 +53,9 @@ class Music:
 
     def set_volume(self, value: float):
         """
-        Set the music playback volume.
+        Set how loud the music plays.
 
-        :param value: Volume, from 0.0 (silent) to 1.0 (full).
+        :param value: Volume, from 0.0 (silent) to 1.0 (full volume).
         :return: This instance, for chaining.
         :rtype: Music
         """
@@ -64,7 +64,7 @@ class Music:
 
     def play_loop(self):
         """
-        Start playing the loaded track on an infinite loop.
+        Start playing the loaded track, and keep repeating it forever.
 
         :return: This instance, for chaining.
         :rtype: Music
@@ -74,7 +74,7 @@ class Music:
 
     def stop_loop(self):
         """
-        Stop playback entirely.
+        Stop the music completely.
 
         :return: This instance, for chaining.
         :rtype: Music
@@ -84,7 +84,7 @@ class Music:
 
     def pause_loop(self):
         """
-        Pause playback, keeping the current position.
+        Pause the music. It stays at the same spot until resumed.
 
         :return: This instance, for chaining.
         :rtype: Music
@@ -94,7 +94,7 @@ class Music:
 
     def resume_loop(self):
         """
-        Resume playback from where it was paused.
+        Continue playing the music from where it was paused.
 
         :return: This instance, for chaining.
         :rtype: Music

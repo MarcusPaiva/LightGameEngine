@@ -1,26 +1,61 @@
 """
 Keyboard, mouse and controller input - the only place in the engine
-that talks to pygame's key/mouse/controller polling APIs.
+that talks to pygame's key/mouse/controller code.
 """
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List, Optional, Tuple
 
 import pygame
 import pygame._sdl2.controller as controller
 
+class InputModel(ABC):
+    """
+    The shared rule every input source (Keyboard, Joystick, ...) must
+    follow: refresh its state once per frame, then say whether
+    anything is pressed, and what.
+    """
+
+    @abstractmethod
+    def detect_buttons(self):
+        """
+        Refresh this input's currently pressed keys/buttons.
+
+        :return: None
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def user_is_pressing(self) -> bool:
+        """
+        :return: True if anything was pressed the last time
+            :meth:`detect_buttons` was called.
+        :rtype: bool
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def get_user_interaction(self) -> 'Keys | Buttons':
+        """
+        :return: The keys/buttons currently pressed.
+        :rtype: List[Keys] or List[Buttons]
+        """
+        pass
 
 def _build_keys_enum() -> type[Enum]:
     """
-    Build one Keys member per key pygame knows about, named after pygame's
-    own K_* constant (lowercased, without the "K_" prefix) - e.g. K_ESCAPE
-    becomes Keys.escape, K_a becomes Keys.a, K_F1 becomes Keys.f1.
+    Build one Keys member for every key pygame knows about. Each name
+    comes from pygame's own K_* constant, made lowercase and with the
+    "K_" removed - for example, K_ESCAPE becomes Keys.escape, K_a
+    becomes Keys.a, and K_F1 becomes Keys.f1.
 
-    A few friendlier aliases used by the game are added on top for
-    readability; since they share the same underlying key code as their
-    canonical name, they resolve to the very same member (Keys.key_up is
-    Keys.up), so both spellings work everywhere.
+    A few easier-to-read names are added on top, for the arrow keys.
+    They use the same key code as the normal name, so both spellings
+    point to the same member (Keys.key_up is the same as Keys.up).
 
-    :return: The dynamically built ``Keys`` enum.
+    :return: The Keys enum, built at import time.
     :rtype: type[Enum]
     """
     members = {name[2:].lower(): getattr(pygame, name) for name in dir(pygame) if name.startswith("K_")}
@@ -38,31 +73,31 @@ Keys = _build_keys_enum()
 
 def set_reapeat(delay, interval):
     """
-    Configure keyboard key-repeat.
+    Set up keyboard key-repeat: how a held key sends more key-presses.
 
-    :param delay: Milliseconds before the first repeat fires.
-    :param interval: Milliseconds between subsequent repeats.
+    :param delay: Milliseconds to wait before the key starts repeating.
+    :param interval: Milliseconds between each repeat after that.
     :return: None
     """
     pygame.key.set_repeat(delay, interval)
 
 
-class Keyboard:
+class Keyboard(InputModel):
     """
-    Polls pygame for currently pressed keys once per frame and
-    translates them into :class:`Keys` members.
+    Checks which keys are pressed, once per frame, and turns them into
+    :class:`Keys` members.
     """
 
     def __init__(self):
         """
-        Start with no keys recorded as pressed.
+        Start with no keys marked as pressed.
         """
         self._current_keys_pressed = []
         self._user_is_pressing = False
 
     def detect_buttons(self):
         """
-        Refresh the set of currently pressed keys from pygame.
+        Ask pygame which keys are pressed right now, and store them.
 
         :return: None
         """
@@ -73,14 +108,14 @@ class Keyboard:
     @property
     def user_is_pressing(self):
         """
-        :return: Whether any key was pressed on the last
-            :meth:`detect_buttons` call.
+        :return: True if any key was pressed the last time
+            :meth:`detect_buttons` was called.
         :rtype: bool
         """
         return self._user_is_pressing
 
     @property
-    def current_keys_pressing(self):
+    def get_user_interaction(self):
         """
         :return: The :class:`Keys` members currently pressed.
         :rtype: List[Keys]
@@ -90,20 +125,21 @@ class Keyboard:
 
 def _build_buttons_enum() -> type[Enum]:
     """
-    Build one Buttons member per SDL game-controller button pygame
-    knows about, named after pygame's own CONTROLLER_BUTTON_* constant
-    (lowercased, without the "CONTROLLER_BUTTON_" prefix) - e.g.
-    CONTROLLER_BUTTON_A becomes Buttons.a, CONTROLLER_BUTTON_DPAD_UP
+    Build one Buttons member for every SDL game-controller button
+    pygame knows about. Each name comes from pygame's own
+    CONTROLLER_BUTTON_* constant, made lowercase and with the
+    "CONTROLLER_BUTTON_" part removed - for example,
+    CONTROLLER_BUTTON_A becomes Buttons.a, and CONTROLLER_BUTTON_DPAD_UP
     becomes Buttons.dpad_up.
 
-    This uses SDL's GameController API (via pygame._sdl2.controller)
-    instead of the older, per-device pygame.joystick API, so button
-    names are the same regardless of which controller brand is plugged
-    in - SDL's built-in mapping database already recognizes Xbox,
-    PlayStation, Switch and most third-party controllers and maps them
-    all onto this same standardized layout.
+    This uses SDL's GameController code (through
+    pygame._sdl2.controller) instead of the older pygame.joystick code.
+    That means button names stay the same no matter which controller
+    brand is plugged in - SDL already knows how to read Xbox,
+    PlayStation, Switch, and most other controllers, and maps them all
+    onto this same set of names.
 
-    :return: The dynamically built ``Buttons`` enum.
+    :return: The Buttons enum, built at import time.
     :rtype: type[Enum]
     """
     prefix = "CONTROLLER_BUTTON_"
@@ -117,12 +153,12 @@ def _build_buttons_enum() -> type[Enum]:
 
 def _build_axes_enum() -> type[Enum]:
     """
-    Build one Axes member per SDL game-controller axis pygame knows
-    about (the two sticks and the two triggers), named after pygame's
-    own CONTROLLER_AXIS_* constant - e.g. CONTROLLER_AXIS_LEFTX becomes
-    Axes.leftx.
+    Build one Axes member for every SDL game-controller stick/trigger
+    axis pygame knows about. Each name comes from pygame's own
+    CONTROLLER_AXIS_* constant - for example, CONTROLLER_AXIS_LEFTX
+    becomes Axes.leftx.
 
-    :return: The dynamically built ``Axes`` enum.
+    :return: The Axes enum, built at import time.
     :rtype: type[Enum]
     """
     prefix = "CONTROLLER_AXIS_"
@@ -138,23 +174,24 @@ Buttons = _build_buttons_enum()
 Axes = _build_axes_enum()
 
 
-class Joystick:
+class Joystick(InputModel):
     """
-    Polls one connected game controller once per frame and translates
-    its state into :class:`Buttons`/:class:`Axes` members, mirroring
-    :class:`Keyboard`'s interface.
+    Checks the state of one connected game controller, once per frame,
+    and turns it into :class:`Buttons`/:class:`Axes` members. Works
+    the same way as :class:`Keyboard`.
     """
 
-    #: Raw axis readings below this magnitude are reported as 0.0, so a
-    #: controller's natural stick drift doesn't register as input.
+    #: If a stick/trigger reading is smaller than this, it counts as
+    #: 0.0. This stops small, natural stick drift from being read as
+    #: real input.
     DEFAULT_DEADZONE = 0.1
 
     def __init__(self, device_index: int = 0):
         """
-        Open a controller and start with no buttons recorded as pressed.
+        Open a controller. Start with no buttons marked as pressed.
 
-        :param device_index: Index of the controller to open (0 for the
-            first one connected).
+        :param device_index: Which controller to open (0 is the first
+            one connected).
         """
         controller.init()
         self._device_index = device_index
@@ -168,8 +205,8 @@ class Joystick:
     @property
     def connected(self) -> bool:
         """
-        :return: Whether a controller was found at this index and is
-            still attached.
+        :return: True if a controller was found at this index, and it
+            is still plugged in.
         :rtype: bool
         """
         return self._controller is not None and self._controller.attached()
@@ -177,16 +214,18 @@ class Joystick:
     @property
     def name(self) -> Optional[str]:
         """
-        :return: The controller's SDL-reported name (e.g. "Xbox Series X
-            Controller", "PS5 Controller", "Nintendo Switch Pro
-            Controller"), or None if nothing is connected.
+        :return: The controller's name, as reported by SDL (for
+            example "Xbox Series X Controller", "PS5 Controller",
+            "Nintendo Switch Pro Controller"). None if nothing is
+            connected.
         :rtype: Optional[str]
         """
         return self._controller.name if self._controller is not None else None
 
     def detect_buttons(self):
         """
-        Refresh the set of currently pressed buttons from the controller.
+        Ask the controller which buttons are pressed right now, and
+        store them.
 
         :return: None
         """
@@ -203,14 +242,14 @@ class Joystick:
     @property
     def user_is_pressing(self):
         """
-        :return: Whether any button was pressed on the last
-            :meth:`detect_buttons` call.
+        :return: True if any button was pressed the last time
+            :meth:`detect_buttons` was called.
         :rtype: bool
         """
         return self._user_is_pressing
 
     @property
-    def current_buttons_pressing(self):
+    def get_user_interaction(self):
         """
         :return: The :class:`Buttons` members currently pressed.
         :rtype: List[Buttons]
@@ -219,24 +258,25 @@ class Joystick:
 
     def button_just_pressed(self, button: "Buttons") -> bool:
         """
-        Whether a button transitioned from not-pressed to pressed on the
-        last :meth:`detect_buttons` call - useful for menu actions
-        (confirm, navigate) that should fire once per press instead of
-        once per frame while held.
+        Check if a button went from not-pressed to pressed on the last
+        :meth:`detect_buttons` call. This is useful for menu actions
+        (like confirm or move) that should happen once per press, not
+        once per frame while the button stays held down.
 
         :param button: The button to check.
-        :return: Whether it was just pressed.
+        :return: True if it was just pressed.
         :rtype: bool
         """
         return button in self._current_buttons_pressed and button not in self._previous_buttons_pressed
 
     def get_axis(self, axis: "Axes", deadzone: float = DEFAULT_DEADZONE) -> float:
         """
-        Read one stick/trigger axis, normalized to the [-1.0, 1.0] range.
+        Read one stick or trigger. The result is scaled to fit between
+        -1.0 and 1.0.
 
         :param axis: Which axis to read.
-        :param deadzone: Values with an absolute magnitude below this
-            are reported as 0.0.
+        :param deadzone: Any reading smaller than this (as a positive
+            or negative amount) counts as 0.0.
         :return: The axis' current value.
         :rtype: float
         """
@@ -248,11 +288,11 @@ class Joystick:
 
 def list_connected_joysticks() -> List[Tuple[int, str]]:
     """
-    List every connected controller SDL currently recognizes.
+    List every controller SDL currently sees as plugged in.
 
-    :return: ``(device_index, name)`` pairs, one per connected
-        controller - each ``device_index`` is what :class:`Joystick`
-        expects.
+    :return: ``(device_index, name)`` pairs, one for each connected
+        controller. Each ``device_index`` is the same number you would
+        pass to :class:`Joystick`.
     :rtype: List[Tuple[int, str]]
     """
     controller.init()
@@ -265,9 +305,10 @@ def list_connected_joysticks() -> List[Tuple[int, str]]:
 
 def mouse_click_detection() -> Optional[Tuple[int, int]]:
     """
-    Mouse click detection.
+    Check if the left mouse button is being clicked right now.
 
-    :return: Mouse click position, or None if the left button isn't pressed.
+    :return: The mouse position if the left button is pressed, or None
+        if it is not.
     :rtype: Optional[Tuple[int, int]]
     """
     if pygame.mouse.get_pressed()[0]:
@@ -277,7 +318,8 @@ def mouse_click_detection() -> Optional[Tuple[int, int]]:
 
 def mouse_position() -> Tuple[int, int]:
     """
-    Current mouse cursor position, regardless of any button being pressed.
+    Get where the mouse is right now, whether or not any button is
+    pressed.
 
     :return: Mouse position.
     :rtype: Tuple[int, int]

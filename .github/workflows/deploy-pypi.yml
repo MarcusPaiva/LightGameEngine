@@ -1,0 +1,88 @@
+# Deploy pipeline: on every merge to main, run the tests, bump the
+# patch version, tag it, build the package, and publish it to PyPI.
+#
+# Required one-time repo setup:
+#   1. Settings > Actions > General > Workflow permissions
+#      -> "Read and write permissions".
+#      Without this, the version-bump commit/tag can't be pushed back.
+#   2. Settings > Secrets and variables > Actions > New repository secret
+#      -> name: PYPI_API_TOKEN, value: a PyPI API token (starts with "pypi-").
+#      Generate one at https://pypi.org/manage/account/token/.
+#   3. If main is a protected branch, make sure it allows this workflow
+#      (or the "github-actions[bot]" actor) to push directly - otherwise
+#      the version-bump push will be rejected.
+#
+# The version bump reuses scripts/bump_version.sh - the same script
+# used for local/manual deploys - so there's one source of truth for
+# how versions get bumped.
+name: Deploy to PyPI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Only one deploy at a time; never cancel one that's already uploading.
+concurrency:
+  group: deploy-pypi
+  cancel-in-progress: false
+
+permissions:
+  contents: write # needed to push the version-bump commit and its tag
+
+jobs:
+  deploy:
+    # Belt-and-suspenders guard against looping on the bump commit
+    # itself. GitHub already skips re-running workflows for commits
+    # pushed with the default GITHUB_TOKEN, but this also covers a
+    # bump commit pushed manually (e.g. after a local deploy).
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history, needed to create and push tags
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-mock build twine
+
+      - name: Run the test suite
+        run: pytest -q
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump the patch version, commit, and tag
+        id: bump
+        run: |
+          VERSION="$(bash scripts/bump_version.sh)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Push the version bump and tag
+        run: |
+          git push origin HEAD:main
+          git push origin "v${{ steps.bump.outputs.version }}"
+
+      - name: Build the package
+        run: python -m build
+
+      - name: Check the built distribution
+        run: twine check dist/*
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*

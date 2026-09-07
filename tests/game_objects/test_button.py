@@ -15,6 +15,7 @@ import pytest
 from light_game_engine.bounding_box import RectBoundingBox
 from light_game_engine.font import GameFont
 from light_game_engine.game_objects.button import Button
+from light_game_engine.inputs.game_input import Buttons
 
 
 def make_button(screen, x=100, y=100, text="Hi", **kwargs):
@@ -281,3 +282,101 @@ class TestButtonSetFont:
         button.setup()
 
         font_ctor.assert_called_with("custom.ttf", 40)
+
+
+class TestButtonFocus:
+    def test_focus_returns_self(self, screen):
+        button = Button(screen, 0, 0, "Hi")
+        assert button.focus(True) is button
+
+    def test_focused_defaults_to_false(self, screen):
+        assert Button(screen, 0, 0, "Hi").focused is False
+
+    def test_focus_sets_the_flag(self, screen):
+        button = Button(screen, 0, 0, "Hi")
+        button.focus(True)
+        assert button.focused is True
+        button.focus(False)
+        assert button.focused is False
+
+    def test_focused_button_shows_as_hovering_without_the_mouse(self, mocker, screen):
+        button = make_button(screen, x=100, y=100, text="Hi")
+        button.focus(True)
+        mock_mouse(mocker, position=(0, 0))  # mouse nowhere near the button
+
+        button.update()
+
+        assert button._hover is True
+
+
+class TestButtonSetConfirmButton:
+    def test_returns_self(self, screen):
+        button = Button(screen, 0, 0, "Hi")
+        assert button.set_confirm_button(Buttons.start) is button
+
+    def test_defaults_to_button_a(self, screen):
+        assert Button(screen, 0, 0, "Hi")._confirm_button == Buttons.a
+
+    def test_changes_which_button_triggers_on_click(self, mocker, screen, make_joystick):
+        on_click = MagicMock()
+        button = make_button(screen, x=100, y=100, text="Hi", on_click=on_click)
+        button.set_confirm_button(Buttons.start)
+        button.focus(True)
+        mock_mouse(mocker)  # no mouse click or hover involved
+        joystick = make_joystick(just_pressed=[Buttons.start])
+
+        button.update(joystick)
+
+        on_click.assert_called_once()
+
+
+class TestButtonJoystickClick:
+    def test_focused_button_triggers_on_confirm_press(self, mocker, screen, make_joystick):
+        on_click = MagicMock()
+        button = make_button(screen, x=100, y=100, text="Hi", on_click=on_click)
+        button.focus(True)
+        mock_mouse(mocker)
+        joystick = make_joystick(just_pressed=[Buttons.a])
+
+        button.update(joystick)
+
+        on_click.assert_called_once()
+
+    def test_unfocused_button_ignores_confirm_press(self, mocker, screen, make_joystick):
+        on_click = MagicMock()
+        button = make_button(screen, x=100, y=100, text="Hi", on_click=on_click)
+        mock_mouse(mocker)
+        joystick = make_joystick(just_pressed=[Buttons.a])
+
+        button.update(joystick)
+
+        on_click.assert_not_called()
+
+    def test_focused_button_ignores_other_buttons(self, mocker, screen, make_joystick):
+        on_click = MagicMock()
+        button = make_button(screen, x=100, y=100, text="Hi", on_click=on_click)
+        button.focus(True)
+        mock_mouse(mocker)
+        joystick = make_joystick(just_pressed=[Buttons.b])
+
+        button.update(joystick)
+
+        on_click.assert_not_called()
+
+    def test_disabled_focused_button_ignores_confirm_press(self, mocker, screen, make_joystick):
+        on_click = MagicMock()
+        button = make_button(screen, x=100, y=100, text="Hi", on_click=on_click)
+        button.focus(True)
+        button.disable(True)
+        mock_mouse(mocker)
+        joystick = make_joystick(just_pressed=[Buttons.a])
+
+        button.update(joystick)
+
+        on_click.assert_not_called()
+
+    def test_no_joystick_does_not_raise_for_a_focused_button(self, mocker, screen):
+        button = make_button(screen, x=100, y=100, text="Hi")
+        button.focus(True)
+        mock_mouse(mocker)
+        button.update(joystick=None)  # should not raise

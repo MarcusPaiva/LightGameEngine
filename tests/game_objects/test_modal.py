@@ -14,6 +14,7 @@ import pytest
 
 from light_game_engine.bounding_box import RectBoundingBox
 from light_game_engine.game_objects.modal import Modal, Options
+from light_game_engine.inputs.game_input import Buttons
 
 
 def mock_mouse(mocker, click=None, position=(0, 0)):
@@ -282,3 +283,126 @@ class TestModalSetFont:
         modal.setup()
 
         font_ctor.assert_called_with("custom.ttf", 40)
+
+
+class TestModalJoystickNavigation:
+    def test_first_option_is_focused_by_default(self, mocker, screen, make_joystick):
+        mock_mouse(mocker)
+        modal = Modal(screen, "Hi")
+        modal.setup()
+        modal.add_options([
+            Options(text="OK", on_click=MagicMock()),
+            Options(text="Cancel", on_click=MagicMock()),
+        ])
+
+        modal.update(make_joystick())
+
+        assert modal._options_buttons[0].focused is True
+        assert modal._options_buttons[1].focused is False
+
+    def test_dpad_right_moves_focus_to_the_next_option(self, mocker, screen, make_joystick):
+        mock_mouse(mocker)
+        modal = Modal(screen, "Hi")
+        modal.setup()
+        modal.add_options([
+            Options(text="OK", on_click=MagicMock()),
+            Options(text="Cancel", on_click=MagicMock()),
+        ])
+        modal.update(make_joystick())  # frame 1: focus starts at 0
+
+        modal.update(make_joystick(just_pressed=[Buttons.dpad_right]))  # frame 2
+
+        assert modal._focused_index == 1
+        assert modal._options_buttons[1].focused is True
+
+    def test_dpad_left_moves_focus_to_the_previous_option(self, mocker, screen, make_joystick):
+        mock_mouse(mocker)
+        modal = Modal(screen, "Hi")
+        modal.setup()
+        modal.add_options([
+            Options(text="OK", on_click=MagicMock()),
+            Options(text="Cancel", on_click=MagicMock()),
+        ])
+        modal.update(make_joystick(just_pressed=[Buttons.dpad_right]))  # -> index 1
+
+        modal.update(make_joystick(just_pressed=[Buttons.dpad_left]))  # -> index 0
+
+        assert modal._focused_index == 0
+
+    def test_focus_clamps_at_the_last_option(self, mocker, screen, make_joystick):
+        mock_mouse(mocker)
+        modal = Modal(screen, "Hi")
+        modal.setup()
+        modal.add_options([
+            Options(text="OK", on_click=MagicMock()),
+            Options(text="Cancel", on_click=MagicMock()),
+        ])
+
+        for _ in range(5):
+            modal.update(make_joystick(just_pressed=[Buttons.dpad_right]))
+
+        assert modal._focused_index == 1
+
+    def test_focus_clamps_at_the_first_option(self, mocker, screen, make_joystick):
+        mock_mouse(mocker)
+        modal = Modal(screen, "Hi")
+        modal.setup()
+        modal.add_options([
+            Options(text="OK", on_click=MagicMock()),
+            Options(text="Cancel", on_click=MagicMock()),
+        ])
+
+        for _ in range(5):
+            modal.update(make_joystick(just_pressed=[Buttons.dpad_left]))
+
+        assert modal._focused_index == 0
+
+    def test_no_options_does_not_raise(self, mocker, screen, make_joystick):
+        mock_mouse(mocker)
+        modal = Modal(screen, "Hi")
+        modal.setup()
+
+        modal.update(make_joystick(just_pressed=[Buttons.dpad_right]))  # should not raise
+
+        assert modal._focused_index == 0
+
+    def test_no_joystick_keeps_the_default_focus(self, mocker, screen):
+        mock_mouse(mocker)
+        modal = Modal(screen, "Hi")
+        modal.setup()
+        modal.add_options([Options(text="OK", on_click=MagicMock())])
+
+        modal.update()  # no joystick passed
+
+        assert modal._focused_index == 0
+        assert modal._options_buttons[0].focused is True
+
+
+class TestModalJoystickConfirm:
+    def test_confirm_press_activates_the_focused_option(self, mocker, screen, make_joystick):
+        mock_mouse(mocker)
+        first_click = MagicMock()
+        second_click = MagicMock()
+        modal = Modal(screen, "Hi")
+        modal.setup()
+        modal.add_options([
+            Options(text="OK", on_click=first_click),
+            Options(text="Cancel", on_click=second_click),
+        ])
+        modal.update(make_joystick(just_pressed=[Buttons.dpad_right]))  # focus -> "Cancel"
+
+        modal.update(make_joystick(just_pressed=[Buttons.a]))  # confirm
+
+        second_click.assert_called_once()
+        first_click.assert_not_called()
+
+    def test_confirm_press_is_ignored_when_modal_is_hidden(self, mocker, screen, make_joystick):
+        mock_mouse(mocker)
+        on_click = MagicMock()
+        modal = Modal(screen, "Hi", show=False)
+        modal.setup()
+        modal.add_options([Options(text="OK", on_click=on_click)])
+
+        modal.update(make_joystick(just_pressed=[Buttons.a]))
+
+        on_click.assert_not_called()

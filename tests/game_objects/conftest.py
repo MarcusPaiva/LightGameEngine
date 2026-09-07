@@ -41,3 +41,18 @@ def make_screen():
 @pytest.fixture
 def screen():
     return FakeScreen()
+
+
+class FakeJoystick:
+    """Stand-in for Joystick: only implements what Button/Modal call."""
+
+    def __init__(self, just_pressed=()):
+        self._just_pressed = set(just_pressed)
+
+    def button_just_pressed(self, button):
+        return button in self._just_pressed
+
+
+@pytest.fixture
+def make_joystick():
+    return FakeJoystick

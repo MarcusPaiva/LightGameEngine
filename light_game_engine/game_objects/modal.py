@@ -1,10 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from light_game_engine.game_objects.button import Button
 from light_game_engine.bounding_box import RectBoundingBox
 from light_game_engine.font import GameFont
 from light_game_engine.game_artfacts_2d import Rect
+from light_game_engine.inputs.game_input import Buttons, Joystick
 from light_game_engine.screen import SurfaceScreen
 
 
@@ -41,6 +42,7 @@ class Modal:
         self._show = show
         self._options_buttons: List[Button] = []
         self._font_name = None
+        self._focused_index = 0
 
     def set_font(self, value: str):
         """
@@ -93,20 +95,45 @@ class Modal:
         self._options += options
         return self
 
-    def update(self):
+    def update(self, joystick: Optional[Joystick] = None):
         """
         Update event.
+        :param joystick: Joystick to navigate/confirm options with. When
+            given, D-pad left/right move focus between options and the
+            focused option's confirm button activates it - the same as
+            clicking it with the mouse.
         """
         self._main_bounding_box = self.__compute_bounding_box()
         self.__process_button_text()
-        self.__process_options()
+        self.__navigate_options(joystick)
+        self.__process_options(joystick)
         return self
 
-    def __process_options(self):
+    def __navigate_options(self, joystick: Optional[Joystick]):
+        """
+        Move the focused option left/right on a D-pad press, and keep
+        the focused index valid as options are added/removed.
+        :param joystick: Joystick to read D-pad presses from, if any.
+        :return: None
+        """
+        if not self._options:
+            self._focused_index = 0
+            return
+        self._focused_index = max(0, min(self._focused_index, len(self._options) - 1))
+        if joystick is None:
+            return
+        if joystick.button_just_pressed(Buttons.dpad_right):
+            self._focused_index = min(self._focused_index + 1, len(self._options) - 1)
+        elif joystick.button_just_pressed(Buttons.dpad_left):
+            self._focused_index = max(self._focused_index - 1, 0)
+
+    def __process_options(self, joystick: Optional[Joystick] = None):
         """
         Process options buttons in modal, laid out left-to-right with equal
         gaps between them and equal outer margins to the box's edges,
         regardless of how wide each button's text makes it.
+        :param joystick: Joystick passed down to each option's update(),
+            so the focused option can react to its confirm button.
         :return:
         """
         self._options_buttons = []
@@ -119,11 +146,12 @@ class Modal:
         size_x = self._main_bounding_box.width
 
         buttons = []
-        for option in self._options:
+        for index, option in enumerate(self._options):
             btn = Button(self._screen, 0, end_y, option.text, margin=self._margin, on_click=option.on_click)
             btn.hover_color(option.hover_color)
             btn.background_color(option.background_color)
             btn.disable(not self._show)
+            btn.focus(index == self._focused_index)
             btn.setup()
             buttons.append(btn)
 
@@ -135,7 +163,7 @@ class Modal:
         current_left = x + outer_margin
         for btn, width in zip(buttons, widths):
             btn.set_position(current_left + self._margin, end_y)
-            btn.update()
+            btn.update(joystick)
             self._options_buttons.append(btn)
             current_left += width + gap
 

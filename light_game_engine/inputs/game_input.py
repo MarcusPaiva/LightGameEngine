@@ -1,11 +1,12 @@
 """
-Keyboard and mouse input - the only place in the engine that talks to
-pygame's key/mouse polling APIs.
+Keyboard, mouse and controller input - the only place in the engine
+that talks to pygame's key/mouse/controller polling APIs.
 """
 from enum import Enum
 from typing import Optional, Tuple
 
 import pygame
+import pygame._sdl2.controller as controller
 
 
 def _build_keys_enum() -> type[Enum]:
@@ -85,6 +86,164 @@ class Keyboard:
         :rtype: List[Keys]
         """
         return self._current_keys_pressed
+
+
+def _build_buttons_enum() -> type[Enum]:
+    """
+    Build one Buttons member per SDL game-controller button pygame
+    knows about, named after pygame's own CONTROLLER_BUTTON_* constant
+    (lowercased, without the "CONTROLLER_BUTTON_" prefix) - e.g.
+    CONTROLLER_BUTTON_A becomes Buttons.a, CONTROLLER_BUTTON_DPAD_UP
+    becomes Buttons.dpad_up.
+
+    This uses SDL's GameController API (via pygame._sdl2.controller)
+    instead of the older, per-device pygame.joystick API, so button
+    names are the same regardless of which controller brand is plugged
+    in - SDL's built-in mapping database already recognizes Xbox,
+    PlayStation, Switch and most third-party controllers and maps them
+    all onto this same standardized layout.
+
+    :return: The dynamically built ``Buttons`` enum.
+    :rtype: type[Enum]
+    """
+    prefix = "CONTROLLER_BUTTON_"
+    members = {
+        name[len(prefix):].lower(): getattr(pygame, name)
+        for name in dir(pygame)
+        if name.startswith(prefix) and not name.endswith(("_INVALID", "_MAX"))
+    }
+    return Enum("Buttons", members)
+
+
+def _build_axes_enum() -> type[Enum]:
+    """
+    Build one Axes member per SDL game-controller axis pygame knows
+    about (the two sticks and the two triggers), named after pygame's
+    own CONTROLLER_AXIS_* constant - e.g. CONTROLLER_AXIS_LEFTX becomes
+    Axes.leftx.
+
+    :return: The dynamically built ``Axes`` enum.
+    :rtype: type[Enum]
+    """
+    prefix = "CONTROLLER_AXIS_"
+    members = {
+        name[len(prefix):].lower(): getattr(pygame, name)
+        for name in dir(pygame)
+        if name.startswith(prefix) and not name.endswith(("_INVALID", "_MAX"))
+    }
+    return Enum("Axes", members)
+
+
+Buttons = _build_buttons_enum()
+Axes = _build_axes_enum()
+
+
+class Joystick:
+    """
+    Polls one connected game controller once per frame and translates
+    its state into :class:`Buttons`/:class:`Axes` members, mirroring
+    :class:`Keyboard`'s interface.
+    """
+
+    #: Raw axis readings below this magnitude are reported as 0.0, so a
+    #: controller's natural stick drift doesn't register as input.
+    DEFAULT_DEADZONE = 0.1
+
+    def __init__(self, device_index: int = 0):
+        """
+        Open a controller and start with no buttons recorded as pressed.
+
+        :param device_index: Index of the controller to open (0 for the
+            first one connected).
+        """
+        controller.init()
+        self._device_index = device_index
+        self._controller = (
+            controller.Controller(device_index) if controller.is_controller(device_index) else None
+        )
+        self._current_buttons_pressed = []
+        self._previous_buttons_pressed = []
+        self._user_is_pressing = False
+
+    @property
+    def connected(self) -> bool:
+        """
+        :return: Whether a controller was found at this index and is
+            still attached.
+        :rtype: bool
+        """
+        return self._controller is not None and self._controller.attached()
+
+    @property
+    def name(self) -> Optional[str]:
+        """
+        :return: The controller's SDL-reported name (e.g. "Xbox Series X
+            Controller", "PS5 Controller", "Nintendo Switch Pro
+            Controller"), or None if nothing is connected.
+        :rtype: Optional[str]
+        """
+        return self._controller.name if self._controller is not None else None
+
+    def detect_buttons(self):
+        """
+        Refresh the set of currently pressed buttons from the controller.
+
+        :return: None
+        """
+        self._previous_buttons_pressed = self._current_buttons_pressed
+        if self._controller is None:
+            self._current_buttons_pressed = []
+            self._user_is_pressing = False
+            return
+        self._current_buttons_pressed = [
+            button for button in Buttons if self._controller.get_button(button.value)
+        ]
+        self._user_is_pressing = len(self._current_buttons_pressed) > 0
+
+    @property
+    def user_is_pressing(self):
+        """
+        :return: Whether any button was pressed on the last
+            :meth:`detect_buttons` call.
+        :rtype: bool
+        """
+        return self._user_is_pressing
+
+    @property
+    def current_buttons_pressing(self):
+        """
+        :return: The :class:`Buttons` members currently pressed.
+        :rtype: List[Buttons]
+        """
+        return self._current_buttons_pressed
+
+    def button_just_pressed(self, button: "Buttons") -> bool:
+        """
+        Whether a button transitioned from not-pressed to pressed on the
+        last :meth:`detect_buttons` call - useful for menu actions
+        (confirm, navigate) that should fire once per press instead of
+        once per frame while held.
+
+        :param button: The button to check.
+        :return: Whether it was just pressed.
+        :rtype: bool
+        """
+        return button in self._current_buttons_pressed and button not in self._previous_buttons_pressed
+
+    def get_axis(self, axis: "Axes", deadzone: float = DEFAULT_DEADZONE) -> float:
+        """
+        Read one stick/trigger axis, normalized to the [-1.0, 1.0] range.
+
+        :param axis: Which axis to read.
+        :param deadzone: Values with an absolute magnitude below this
+            are reported as 0.0.
+        :return: The axis' current value.
+        :rtype: float
+        """
+        if self._controller is None:
+            return 0.0
+        value = max(-1.0, min(1.0, self._controller.get_axis(axis.value) / 32767))
+        return value if abs(value) > deadzone else 0.0
 
 
 def mouse_click_detection() -> Optional[Tuple[int, int]]:

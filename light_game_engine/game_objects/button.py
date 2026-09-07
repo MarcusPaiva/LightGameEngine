@@ -1,10 +1,11 @@
 from logging import disable
+from typing import Optional
 
 from light_game_engine.bounding_box import CircleBoundingBox, RectBoundingBox
 from light_game_engine.font import GameFont
 from light_game_engine.game_artfacts_2d import Rect
 from light_game_engine.game_collision import circle_rect_collision_detection
-from light_game_engine.inputs.game_input import mouse_click_detection, mouse_position
+from light_game_engine.inputs.game_input import Buttons, Joystick, mouse_click_detection, mouse_position
 from light_game_engine.screen import SurfaceScreen
 
 
@@ -36,6 +37,8 @@ class Button:
         self._text_position = [0,0]
         self._disable = False
         self._font_name = None
+        self._focused = False
+        self._confirm_button = Buttons.a
 
     def disable(self, value:bool):
         self._disable = value
@@ -43,6 +46,31 @@ class Button:
     @property
     def margin(self) -> int:
         return self._margin
+
+    def focus(self, value: bool):
+        """
+        Mark this button as focused (e.g. via controller navigation), so
+        it renders with its hover color and reacts to the controller's
+        confirm button even without the mouse over it.
+        :param value: Whether this button is focused.
+        :return: This instance, for chaining.
+        """
+        self._focused = value
+        return self
+
+    @property
+    def focused(self) -> bool:
+        return self._focused
+
+    def set_confirm_button(self, button: Buttons):
+        """
+        Change which controller button activates this button while it's
+        focused. Defaults to Buttons.a.
+        :param button: The Buttons member that should trigger on_click.
+        :return: This instance, for chaining.
+        """
+        self._confirm_button = button
+        return self
 
     def set_font(self, value: str):
         """
@@ -103,13 +131,26 @@ class Button:
         """
         self._hover_color = color
 
-    def update(self):
+    def update(self, joystick: Optional[Joystick] = None):
+        """
+        Advance this button's state by one frame: check for a mouse
+        click or, if this button is focused, a controller confirm-button
+        press; re-render its text.
+        :param joystick: Joystick to read a confirm-button press from,
+            if this button may be focused via controller navigation.
+        :return: None
+        """
         self._process_button_box()
         mouse_click = mouse_click_detection()
-        if mouse_click is not None and self.__click_inside_button_detection(mouse_click[0],mouse_click[1]):
-            if self._on_click is not None and not self._disable:
-                self._on_click()
-        self._hover = self.__mouse_hove_detection()
+        clicked_by_mouse = mouse_click is not None and self.__click_inside_button_detection(
+            mouse_click[0], mouse_click[1]
+        )
+        clicked_by_joystick = (
+            self._focused and joystick is not None and joystick.button_just_pressed(self._confirm_button)
+        )
+        if (clicked_by_mouse or clicked_by_joystick) and self._on_click is not None and not self._disable:
+            self._on_click()
+        self._hover = self.__mouse_hove_detection() or self._focused
         self.__process_button_text()
 
 

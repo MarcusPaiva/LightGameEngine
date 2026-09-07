@@ -1,8 +1,9 @@
 from logging import disable
 
-from light_game_engine.bounding_box import RectBoundingBox
+from light_game_engine.bounding_box import CircleBoundingBox, RectBoundingBox
 from light_game_engine.font import GameFont
 from light_game_engine.game_artfacts_2d import Rect
+from light_game_engine.game_collision import circle_rect_collision_detection
 from light_game_engine.inputs.game_input import mouse_click_detection, mouse_position
 from light_game_engine.screen import SurfaceScreen
 
@@ -130,9 +131,7 @@ class Button:
         :return: Mouse inside box status.
         """
         position_x, position_y = mouse_position()
-        box_bounds = self._main_bounding_box.bounds
-        if box_bounds[0] < position_x < box_bounds[2] and box_bounds[1] < position_y < box_bounds[3]:
-            return True
+        return self.__point_inside_button_detection(position_x, position_y)
 
     def __click_inside_button_detection(self, position_x:int, position_y:int) -> bool:
         """
@@ -141,9 +140,19 @@ class Button:
         :param position_y: Axis y position event.
         :return: Mouse click inside box status.
         """
-        box_bounds = self._main_bounding_box.bounds
-        if box_bounds[0] < position_x < box_bounds[2] and box_bounds[1] < position_y < box_bounds[3]:
-            return True
+        return self.__point_inside_button_detection(position_x, position_y)
+
+    def __point_inside_button_detection(self, position_x: float, position_y: float) -> bool:
+        """
+        Point-vs-button-box collision. Delegates to the shared
+        circle_rect_collision_detection helper (as a zero-radius circle)
+        instead of comparing bounds by hand.
+        :param position_x: Axis x position to test.
+        :param position_y: Axis y position to test.
+        :return: Whether the point falls inside the button's box.
+        """
+        point = CircleBoundingBox(position_x, position_y, 0)
+        return circle_rect_collision_detection(point, 0, self._main_bounding_box)
 
     def draw(self) -> None:
         color = self._background_color

@@ -1,32 +1,33 @@
 # LightGameEngine 🎮✨
 
-**Um canivete suíço para o Pygame — não um substituto.**
+**A Swiss Army knife for Pygame — not a replacement for it.**
 
-LightGameEngine é uma camada leve, em Python, construída em cima do Pygame: pega o que o Pygame já faz bem e embrulha do jeito mais simples e reutilizável possível, adicionando por cima os recursos que o Pygame **não** traz nativamente — efeitos prontos, um sistema de input mais confortável e objetos de jogo (botão, modal...) que hoje todo mundo acaba reinventando do zero em cada projeto novo.
+LightGameEngine is a light Python layer built on top of Pygame: it takes what Pygame already does well and wraps it in the simplest, most reusable way possible, then adds the things Pygame does **not** provide out of the box — ready-made effects, a friendlier input system, and game UI objects (buttons, modals...) that most people end up rebuilding from scratch in every new project.
 
-A ideia não é competir com engines completas (Godot, Unity) nem esconder o Pygame de você. Você continua programando em Pygame puro — a lib só poupa o boilerplate repetido projeto após projeto.
+The goal is not to compete with full game engines (Godot, Unity), and not to hide Pygame from you either. You keep writing plain Pygame code — this library just saves you from repeating the same boilerplate project after project.
 
-## 🎯 Filosofia
+## 🎯 Philosophy
 
-LightGameEngine é pensada para ser uma ferramenta de **alto nível**, feita para facilitar a vida de quem programa jogos em Python — **não** para substituir o Pygame. Você mantém acesso total a ele sempre que precisar; a lib só evita que você reescreva, toda vez, o que já devia vir pronto: colisão, input, UI básica, efeitos.
+LightGameEngine aims to be a **high-level** tool, built to make life easier for people writing games in Python — **not** to replace Pygame. You still have full access to Pygame whenever you need it; the library just stops you from rewriting, every single time, the things that should already be there: collision, input, basic UI, effects.
 
-## 🧰 O que a lib entrega hoje
+## 🧰 What the library offers today
 
-- **Geometria e colisão**, sem depender do Pygame para a matemática (`BoundingBox`, `RectBoundingBox`, `CircleBoundingBox`, detecção de colisão círculo-círculo).
-- **Wrappers finos** e encadeáveis sobre janela, fontes, imagens e som (`SurfaceScreen`, `GameFont`, `Image`, `SoundEffect`, `Music`).
-- **Efeitos e recursos extras** que o Pygame não tem de fábrica — hoje: fade in/out de imagem, pronto para splash screens.
-- **Melhoria de uso em inputs**: um enum `Keys` com nome legível para cada tecla do Pygame (incluindo aliases como `key_up`), uma classe `Keyboard` que já rastreia as teclas pressionadas a cada frame, e helpers de mouse (posição, clique) prontos para usar.
-- **Objetos semi-prontos para uso**: `Button` e `Modal`, componentes de UI comuns em praticamente todo jogo (menus, confirmações, diálogos) que normalmente você monta na mão.
+- **Geometry and collision**, with no Pygame math dependency (`BoundingBox`, `RectBoundingBox`, `CircleBoundingBox`, circle-vs-circle, rect-vs-rect, and circle-vs-rect collision).
+- **Thin, chainable wrappers** around the window, fonts, images, and sound (`SurfaceScreen`, `GameFont`, `Image`, `SoundEffect`, `Music`).
+- **Extra effects and features** Pygame doesn't ship with — today: an image fade-in/fade-out effect, ready for splash screens.
+- **Better input handling**: keyboard (`Keyboard`, plus a `Keys` enum with readable names for every key) and controllers (`Joystick`, via SDL's GameController API — it recognizes Xbox, PlayStation, Switch, and most third-party controllers under the same button names), plus ready-to-use mouse helpers.
+- **Input alias system** (`Alias`) — one of the library's biggest differentiators: map game actions (`"jump"`, `"confirm"`...) to one or more keys/buttons, freely mixing keyboard and controller. Your gameplay code just asks *"was the `jump` action triggered?"* without ever needing to know or care which key or button was pressed — key rebinding without duplicating logic across your code.
+- **Ready-to-use objects**: `Button` and `Modal`, UI components almost every game needs (menus, confirmations, dialogs), with built-in controller navigation (focus + confirm button).
 
-Ideal para prototipagem rápida, ensino de programação de jogos, ou simplesmente para quem gosta de colocar a mão no código sem precisar reinventar a roda.
+Great for quick prototyping, teaching game programming, or just for anyone who likes writing code by hand instead of reinventing the wheel.
 
-## 📌 Recursos em desenvolvimento
+## 📌 Coming next
 
-- Gerenciamento de cenas totalmente encapsulado
-- Mais objetos de UI prontos para uso
-- SplashScreen pronta para uso (hoje já disponível como efeito de fade de imagem)
-- Suporte a assets com cache
+- Fully encapsulated scene management
+- More ready-to-use UI objects
+- A ready-to-use SplashScreen (the image fade effect is already available today)
+- Asset support with caching
 
-> Projeto em estágio inicial – acompanhe os posts semanais no [meu LinkedIn](https://www.linkedin.com/in/marcuspaiva/) para ver o progresso e participe com feedbacks!
+> This project is still in an early stage - follow the weekly posts on [my LinkedIn](https://www.linkedin.com/in/marcuspaiva/) to see its progress, and feel free to jump in with feedback!
 
-🚧 **Em construção – contribuições e sugestões são bem-vindas!**
+🚧 **Work in progress - contributions and suggestions are welcome!**

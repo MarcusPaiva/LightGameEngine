@@ -146,6 +146,65 @@ class TestButtonHover:
         button.update()
         assert not button._hover
 
+    def test_hover_is_a_real_boolean(self, mocker, screen):
+        # The point-in-box check now delegates to circle_rect_collision_detection,
+        # which always returns True/False - not the None the old hand-rolled
+        # "if match: return True" (no else) used to leave on a miss.
+        button = make_button(screen, x=100, y=100, text="Hi")
+        mock_mouse(mocker, position=(0, 0))
+        button.update()
+        assert button._hover is False
+
+    def test_hovering_exactly_on_the_box_boundary_counts_as_inside(self, mocker, screen):
+        button = make_button(screen, x=100, y=100, text="Hi", margin=10)
+        mock_mouse(mocker, position=(0, 0))
+        button.update()  # populate _main_bounding_box via _process_button_box()
+        box = button._main_bounding_box
+
+        mock_mouse(mocker, position=(box.x0, box.center_y))
+        button.update()
+
+        assert button._hover is True
+
+
+class TestButtonPointDetectionUsesCollisionHelper:
+    def test_hover_delegates_to_circle_rect_collision_detection(self, mocker, screen):
+        collision = mocker.patch(
+            "light_game_engine.game_objects.button.circle_rect_collision_detection",
+            return_value=True,
+        )
+        button = make_button(screen, x=100, y=100, text="Hi")
+        mock_mouse(mocker, position=(105, 105))
+
+        button.update()
+
+        collision.assert_called_once()
+        point, radius, rect = collision.call_args[0]
+        assert (point.center_x, point.center_y) == (105, 105)
+        assert radius == 0
+        assert rect is button._main_bounding_box
+        assert button._hover is True
+
+    def test_click_delegates_to_circle_rect_collision_detection(self, mocker, screen):
+        collision = mocker.patch(
+            "light_game_engine.game_objects.button.circle_rect_collision_detection",
+            return_value=True,
+        )
+        on_click = MagicMock()
+        button = make_button(screen, x=100, y=100, text="Hi", on_click=on_click)
+        # update() checks both the click and the hover point; pin both to
+        # the same spot so this only has to inspect one set of arguments.
+        mock_mouse(mocker, click=(105, 105), position=(105, 105))
+
+        button.update()
+
+        assert collision.call_count == 2  # click check + hover check
+        point, radius, rect = collision.call_args_list[0][0]
+        assert (point.center_x, point.center_y) == (105, 105)
+        assert radius == 0
+        assert rect is button._main_bounding_box
+        on_click.assert_called_once()
+
 
 class TestButtonDraw:
     def test_draw_uses_background_color_when_not_hovering(self, mocker, screen):

@@ -17,6 +17,7 @@ from light_game_engine.inputs.game_input import (
     Joystick,
     Keys,
     Keyboard,
+    list_connected_joysticks,
     set_reapeat,
     mouse_click_detection,
     mouse_position,
@@ -186,6 +187,56 @@ class TestAxesEnum:
     def test_excludes_invalid_and_max_sentinels(self):
         assert not hasattr(Axes, "invalid")
         assert not hasattr(Axes, "max")
+
+
+class TestListConnectedJoysticks:
+    def _mock_devices(self, mocker, devices):
+        """
+        :param devices: (is_controller, name) per SDL joystick index.
+        """
+        mocker.patch("light_game_engine.inputs.game_input.controller.init")
+        mocker.patch("light_game_engine.inputs.game_input.controller.get_count", return_value=len(devices))
+        mocker.patch(
+            "light_game_engine.inputs.game_input.controller.is_controller",
+            side_effect=lambda index: devices[index][0],
+        )
+        mocker.patch(
+            "light_game_engine.inputs.game_input.controller.name_forindex",
+            side_effect=lambda index: devices[index][1],
+        )
+
+    def test_no_devices_returns_an_empty_list(self, mocker):
+        self._mock_devices(mocker, [])
+        assert list_connected_joysticks() == []
+
+    def test_one_connected_controller(self, mocker):
+        self._mock_devices(mocker, [(True, "Xbox Series X Controller")])
+        assert list_connected_joysticks() == [(0, "Xbox Series X Controller")]
+
+    def test_multiple_connected_controllers_keep_their_index(self, mocker):
+        self._mock_devices(mocker, [
+            (True, "Xbox Series X Controller"),
+            (True, "PS5 Controller"),
+        ])
+        assert list_connected_joysticks() == [(0, "Xbox Series X Controller"), (1, "PS5 Controller")]
+
+    def test_non_controller_joysticks_are_excluded(self, mocker):
+        # SDL may see a joystick device it has no game-controller mapping
+        # for; is_controller(index) is False for those and they should
+        # be left out.
+        self._mock_devices(mocker, [
+            (True, "Xbox Series X Controller"),
+            (False, "Some Unmapped Joystick"),
+        ])
+        assert list_connected_joysticks() == [(0, "Xbox Series X Controller")]
+
+    def test_initializes_the_controller_subsystem(self, mocker):
+        self._mock_devices(mocker, [])
+        init = mocker.patch("light_game_engine.inputs.game_input.controller.init")
+
+        list_connected_joysticks()
+
+        init.assert_called_once()
 
 
 class TestJoystickConnection:

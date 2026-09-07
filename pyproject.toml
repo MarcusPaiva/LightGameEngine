@@ -9,7 +9,7 @@ description = "Light game engine package."
 authors = [
     {name = "Marcus Paiva", email = "marcus.paiva.ti@gmail.com.br"},
 ]
-readme = "README.md"
+readme = "readme.md"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

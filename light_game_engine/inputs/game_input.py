@@ -3,7 +3,7 @@ Keyboard, mouse and controller input - the only place in the engine
 that talks to pygame's key/mouse/controller polling APIs.
 """
 from enum import Enum
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import pygame
 import pygame._sdl2.controller as controller
@@ -244,6 +244,23 @@ class Joystick:
             return 0.0
         value = max(-1.0, min(1.0, self._controller.get_axis(axis.value) / 32767))
         return value if abs(value) > deadzone else 0.0
+
+
+def list_connected_joysticks() -> List[Tuple[int, str]]:
+    """
+    List every connected controller SDL currently recognizes.
+
+    :return: ``(device_index, name)`` pairs, one per connected
+        controller - each ``device_index`` is what :class:`Joystick`
+        expects.
+    :rtype: List[Tuple[int, str]]
+    """
+    controller.init()
+    return [
+        (index, controller.name_forindex(index))
+        for index in range(controller.get_count())
+        if controller.is_controller(index)
+    ]
 
 
 def mouse_click_detection() -> Optional[Tuple[int, int]]:
